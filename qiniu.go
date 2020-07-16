@@ -84,3 +84,7 @@ func (q Client) PrivateURL(domain string, key string, duration time.Duration) st
 
 	return storage.MakePrivateURL(q.Credentials(), domain, key, time.Now().Add(duration).Unix())
 }
+
+func (q Client) BucketManager () *storage.BucketManager {
+	return storage.NewBucketManager(q.Credentials(), &q.StorageConfig)
+}

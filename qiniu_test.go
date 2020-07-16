@@ -80,5 +80,6 @@ func TestFile(t *testing.T) {
 		data, err := ioutil.ReadAll(httpResp.Body) ;ge.Check(err)
 		log.Print(url)
 		as.Equal(data, []byte("abc"))
+		err = qiniuClient.BucketManager().Delete("og-demo", resp.Key) ; if err != nil {panic(err)}
 	}
 }
