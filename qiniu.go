@@ -81,10 +81,19 @@ func (q Client) PublicURL(domain string, key string) string {
 	return storage.MakePublicURL(domain, key)
 }
 func (q Client) PrivateURL(domain string, key string, duration time.Duration) string {
-
 	return storage.MakePrivateURL(q.Credentials(), domain, key, time.Now().Add(duration).Unix())
 }
 
 func (q Client) BucketManager () *storage.BucketManager {
 	return storage.NewBucketManager(q.Credentials(), &q.StorageConfig)
+}
+func (q Client) BucketName() string {
+	return q.PutPolicy.Scope
+}
+func (q Client) Ping () error {
+	err := q.BucketManager().DeleteAfterDays(q.BucketName(), "Nonexistentfile__0102012", 0)
+	if err.Error() == "no such file or directory" {
+		return nil
+	}
+	return err
 }

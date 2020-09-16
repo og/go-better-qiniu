@@ -17,7 +17,7 @@ func ExampleBasic() {
 		AK: TestAK,
 		SK: TestSK,
 		PutPolicy: storage.PutPolicy{
-			Scope: "og-demo", // 空间名
+			Scope: TestBucket, // 空间名
 		},
 		StorageConfig: storage.Config{
 			Zone:          &storage.ZoneHuanan,
@@ -53,7 +53,7 @@ func TestFile(t *testing.T) {
 		AK: TestAK,
 		SK: TestSK,
 		PutPolicy: storage.PutPolicy{
-			Scope: "og-demo",
+			Scope: TestBucket,
 		},
 		StorageConfig: storage.Config{
 			Zone:          &storage.ZoneHuanan,
@@ -80,6 +80,62 @@ func TestFile(t *testing.T) {
 		data, err := ioutil.ReadAll(httpResp.Body) ;ge.Check(err)
 		log.Print(url)
 		as.Equal(data, []byte("abc"))
-		err = qiniuClient.BucketManager().Delete("og-demo", resp.Key) ; if err != nil {panic(err)}
+		err = qiniuClient.BucketManager().Delete(TestBucket, resp.Key) ; if err != nil {panic(err)}
+	}
+}
+func TestPing(t *testing.T) {
+	as := gtest.NewAS(t)
+	{
+		qiniuClient := qn.Client{
+			AK: TestAK,
+			SK: TestSK,
+			PutPolicy: storage.PutPolicy{
+				Scope: TestBucket,
+			},
+			StorageConfig: storage.Config{
+				Zone:          &storage.ZoneHuanan,
+			},
+		}
+		as.NoError(qiniuClient.Ping())
+	}
+
+	{
+		qiniuClient := qn.Client{
+			AK: "",
+			SK: TestSK,
+			PutPolicy: storage.PutPolicy{
+				Scope: TestBucket,
+			},
+			StorageConfig: storage.Config{
+				Zone:          &storage.ZoneHuanan,
+			},
+		}
+		as.ErrorString(qiniuClient.Ping(),"bad token")
+	}
+	{
+		qiniuClient := qn.Client{
+			AK: TestAK,
+			SK: "",
+			PutPolicy: storage.PutPolicy{
+				Scope: TestBucket,
+			},
+			StorageConfig: storage.Config{
+				Zone:          &storage.ZoneHuanan,
+			},
+		}
+		as.ErrorString(qiniuClient.Ping(),"bad token")
+	}
+	{
+		qiniuClient := qn.Client{
+			AK: TestAK,
+			SK: TestSK,
+			PutPolicy: storage.PutPolicy{
+				Scope: "",
+			},
+			StorageConfig: storage.Config{
+				Zone:          &storage.ZoneHuanan,
+			},
+		}
+		as.ErrorString(qiniuClient.Ping(),"no such bucket")
 	}
 }
