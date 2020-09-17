@@ -3,11 +3,13 @@ package qn
 import (
 	"bytes"
 	"context"
+	"fmt"
 	ge "github.com/og/x/error"
 	"github.com/qiniu/api.v7/v7/auth"
 	"github.com/qiniu/api.v7/v7/auth/qbox"
 	"github.com/qiniu/api.v7/v7/storage"
 	"os"
+	"strings"
 	"time"
 )
 func createCallReader (reader func()(end bool, data []byte), file *os.File) {
@@ -80,10 +82,27 @@ type Response struct {
 func (q Client) PublicURL(domain string, key string) string {
 	return storage.MakePublicURL(domain, key)
 }
-func (q Client) PrivateURL(domain string, key string, duration time.Duration) string {
-	return storage.MakePrivateURL(q.Credentials(), domain, key, time.Now().Add(duration).Unix())
+type PrivateURLData struct {
+	Domain string
+	Key string
+	Duration time.Duration
+	Attname string
 }
-
+func (q Client) PrivateURL(data PrivateURLData) string {
+	publicURL := q.PublicURL(data.Domain, data.Key)
+	urlToSign := publicURL
+	if strings.Contains(publicURL, "?") {
+		urlToSign = fmt.Sprintf("%s&e=%d", urlToSign, data.Duration)
+	} else {
+		urlToSign = fmt.Sprintf("%s?e=%d", urlToSign, data.Duration)
+	}
+	if len(data.Attname) != 0 {
+		urlToSign += "&attname=" + data.Attname
+	}
+	token := q.Credentials().Sign([]byte(urlToSign))
+	privateURL := fmt.Sprintf("%s&token=%s", urlToSign, token)
+	return privateURL
+}
 func (q Client) BucketManager () *storage.BucketManager {
 	return storage.NewBucketManager(q.Credentials(), &q.StorageConfig)
 }

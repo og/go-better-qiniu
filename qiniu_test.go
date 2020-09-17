@@ -30,8 +30,6 @@ func ExampleBasic() {
 	}) ; if err != nil {panic(err)}
 	// 公开空间
 	qiniuClient.PublicURL("http://domain.com", resp.Key)
-	// 私有空间
-	qiniuClient.PrivateURL("http://domain.com", resp.Key, time.Minute*10)
 
 	// 分片上传大文件
 	qiniuClient.ResumeUpload(qn.ResumeUpload{
@@ -68,19 +66,42 @@ func TestFile(t *testing.T) {
 		as.Equal(resp.Key, "demo.txt")
 	}
 	{
+		cloudFilename := time.Now().Format("20060102150405") + "byte.txt"
 		resp, err := qiniuClient.BytesUpdate(qn.BytesUpdate{
-			QiniuFilename: "byte.txt",
+			QiniuFilename: cloudFilename,
 			Data:          []byte("abc"),
 			RputExtra:     storage.RputExtra{},
 		})
 		as.NoError(err, "can not be error")
-		as.Equal(resp.Key, "byte.txt")
-		url := qiniuClient.PrivateURL(TestDomain, resp.Key, time.Second*1)
+		as.Equal(resp.Key, cloudFilename)
+		url := qiniuClient.PrivateURL(qn.PrivateURLData{
+			Domain:   TestDomain,
+			Key:      resp.Key,
+			Duration: time.Second*10,
+			Attname:  "",
+		})
 		httpResp , err := http.Get(url) ; ge.Check(err)
 		data, err := ioutil.ReadAll(httpResp.Body) ;ge.Check(err)
 		log.Print(url)
 		as.Equal(data, []byte("abc"))
 		err = qiniuClient.BucketManager().Delete(TestBucket, resp.Key) ; if err != nil {panic(err)}
+	}
+	{
+		cloudFilename := time.Now().Format("20060102150405") + "byte.txt"
+		resp, err := qiniuClient.BytesUpdate(qn.BytesUpdate{
+			QiniuFilename: cloudFilename,
+			Data:          []byte("abc"),
+			RputExtra:     storage.RputExtra{},
+		})
+		as.NoError(err, "can not be error")
+		as.Equal(resp.Key, cloudFilename)
+		url := qiniuClient.PrivateURL(qn.PrivateURLData{
+			Domain:   TestDomain,
+			Key:      resp.Key,
+			Duration: time.Second*10,
+			Attname:  time.Now().Format("20060102150405") + "othername.csv",
+		})
+		log.Print(url)
 	}
 }
 func TestPing(t *testing.T) {
@@ -139,3 +160,4 @@ func TestPing(t *testing.T) {
 		as.ErrorString(qiniuClient.Ping(),"no such bucket")
 	}
 }
+
