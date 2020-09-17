@@ -24,10 +24,6 @@ resp, err := qiniuClient.Upload(qn.Upload{
     QiniuFilename: "name.txt",
     PutExtra:      storage.PutExtra{},
 }) ; if err != nil {panic(err)}
-// 公开空间
-qiniuClient.PublicURL("http://domain.com", resp.Key)
-// 私有空间
-qiniuClient.PrivateURL("http://domain.com", resp.Key, time.Minute*10)
 
 // 分片上传大文件
 qiniuClient.ResumeUpload(qn.ResumeUpload{
