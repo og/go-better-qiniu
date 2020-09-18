@@ -16,9 +16,7 @@ func ExampleBasic() {
 	qiniuClient := qn.Client{
 		AK: TestAK,
 		SK: TestSK,
-		PutPolicy: storage.PutPolicy{
-			Scope: TestBucket, // 空间名
-		},
+		Bucket: TestBucket,
 		StorageConfig: storage.Config{
 			Zone:          &storage.ZoneHuanan,
 		},
@@ -26,7 +24,6 @@ func ExampleBasic() {
 	resp, err := qiniuClient.Upload(qn.Upload{
 		LocalFilename: "localfile.txt",
 		QiniuFilename: "name.txt",
-		PutExtra:      storage.PutExtra{},
 	}) ; if err != nil {panic(err)}
 	// 公开空间
 	qiniuClient.PublicURL("http://domain.com", resp.Key)
@@ -50,12 +47,19 @@ func TestFile(t *testing.T) {
 	qiniuClient := qn.Client{
 		AK: TestAK,
 		SK: TestSK,
-		PutPolicy: storage.PutPolicy{
-			Scope: TestBucket,
-		},
+		Bucket: TestBucket,
 		StorageConfig: storage.Config{
 			Zone:          &storage.ZoneHuanan,
 		},
+	}
+	{
+		resp, err := qiniuClient.Upload(qn.Upload{
+			LocalFilename: "go.mod",
+			QiniuFilename: "golangmod",
+		})
+		as.NoError(err, "can not be error")
+		log.Print(resp)
+		as.Equal(resp.Key, "golangmod")
 	}
 	{
 		resp, err := qiniuClient.ResumeUpload(qn.ResumeUpload{
@@ -110,9 +114,7 @@ func TestPing(t *testing.T) {
 		qiniuClient := qn.Client{
 			AK: TestAK,
 			SK: TestSK,
-			PutPolicy: storage.PutPolicy{
-				Scope: TestBucket,
-			},
+			Bucket: TestBucket,
 			StorageConfig: storage.Config{
 				Zone:          &storage.ZoneHuanan,
 			},
@@ -124,9 +126,7 @@ func TestPing(t *testing.T) {
 		qiniuClient := qn.Client{
 			AK: "",
 			SK: TestSK,
-			PutPolicy: storage.PutPolicy{
-				Scope: TestBucket,
-			},
+			Bucket: TestBucket,
 			StorageConfig: storage.Config{
 				Zone:          &storage.ZoneHuanan,
 			},
@@ -137,9 +137,7 @@ func TestPing(t *testing.T) {
 		qiniuClient := qn.Client{
 			AK: TestAK,
 			SK: "",
-			PutPolicy: storage.PutPolicy{
-				Scope: TestBucket,
-			},
+			Bucket: TestBucket,
 			StorageConfig: storage.Config{
 				Zone:          &storage.ZoneHuanan,
 			},
@@ -150,9 +148,7 @@ func TestPing(t *testing.T) {
 		qiniuClient := qn.Client{
 			AK: TestAK,
 			SK: TestSK,
-			PutPolicy: storage.PutPolicy{
-				Scope: "",
-			},
+			Bucket: "",
 			StorageConfig: storage.Config{
 				Zone:          &storage.ZoneHuanan,
 			},

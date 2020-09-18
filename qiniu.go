@@ -3,6 +3,7 @@ package qn
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	ge "github.com/og/x/error"
 	"github.com/qiniu/api.v7/v7/auth"
@@ -27,12 +28,31 @@ func Create(filename string, reader func()(end bool, data []byte)) {
 type Client struct {
 	AK string
 	SK string
-	PutPolicy storage.PutPolicy
+	Bucket string
 	StorageConfig storage.Config
 }
+type OptionPutPolicy struct {
+	Valid bool
+	PutPolicy storage.PutPolicy
+}
+func (o OptionPutPolicy) Unwrap() storage.PutPolicy {
+	if !o.Valid {panic(errors.New("OptionPutPolicy.Valid is false"))}
+	return o.PutPolicy
+}
+func PutPolicy(putPolicy storage.PutPolicy) OptionPutPolicy {
+	return OptionPutPolicy{
+		Valid: true,
+		PutPolicy: putPolicy,
+	}
+}
+func (q Client) DefaultPutPolicy() storage.PutPolicy {
+	return storage.PutPolicy{
+		Scope: q.Bucket,
+	}
+}
 
-func (q Client) Token() string {
-	return q.PutPolicy.UploadToken(q.Mac())
+func (q Client) Token(policy storage.PutPolicy) string {
+	return policy.UploadToken(q.Mac())
 }
 func (q Client) Mac() *qbox.Mac {
 	return qbox.NewMac(q.AK, q.SK)
@@ -44,34 +64,42 @@ type ResumeUpload struct {
 	LocalFilename string
 	QiniuFilename string
 	RputExtra storage.RputExtra
+	PutPolicy storage.PutPolicy
 }
 func (q Client) ResumeUpload(data ResumeUpload) (resp Response ,err error) {
-	q.PutPolicy.Scope += ":" + data.QiniuFilename
+	if data.PutPolicy.Scope == "" {
+		data.PutPolicy.Scope = q.Bucket
+	}
 	uploader := storage.NewResumeUploader(&q.StorageConfig)
-	err = uploader.PutFile(context.Background(), &resp, q.Token(), data.QiniuFilename, data.LocalFilename, &data.RputExtra)
+	err = uploader.PutFile(context.Background(), &resp, q.Token(data.PutPolicy), data.QiniuFilename, data.LocalFilename, &data.RputExtra)
 	return
 }
 type BytesUpdate struct {
 	QiniuFilename string
 	Data []byte
 	RputExtra storage.RputExtra
+	PutPolicy storage.PutPolicy
 }
 func (q Client) BytesUpdate(data BytesUpdate)(resp Response ,err error)  {
-	q.PutPolicy.Scope += ":" + data.QiniuFilename
+	if data.PutPolicy.Scope == "" {
+		data.PutPolicy.Scope = q.Bucket
+	}
 	uploader := storage.NewResumeUploader(&q.StorageConfig)
-	err = uploader.Put(context.Background(), &resp, q.Token(), data.QiniuFilename, bytes.NewReader(data.Data), int64(len(data.Data)), &data.RputExtra)
+	err = uploader.Put(context.Background(), &resp, q.Token(data.PutPolicy), data.QiniuFilename, bytes.NewReader(data.Data), int64(len(data.Data)), &data.RputExtra)
 	return
 }
 type Upload struct {
 	LocalFilename string
 	QiniuFilename string
 	PutExtra storage.PutExtra
+	PutPolicy storage.PutPolicy
 }
 func (q Client) Upload(data Upload) (resp Response ,err error) {
-	q.PutPolicy.Scope += ":" + data.QiniuFilename
+	if data.PutPolicy.Scope == "" {
+		data.PutPolicy.Scope = q.Bucket
+	}
 	uploader := storage.NewFormUploader(&q.StorageConfig)
-
-	err = uploader.PutFile(context.Background(), &resp, q.Token(), data.QiniuFilename, data.LocalFilename, &data.PutExtra)
+	err = uploader.PutFile(context.Background(), &resp, q.Token(data.PutPolicy), data.QiniuFilename, data.LocalFilename, &data.PutExtra)
 	return
 }
 type Response struct {
@@ -106,11 +134,9 @@ func (q Client) PrivateURL(data PrivateURLData) string {
 func (q Client) BucketManager () *storage.BucketManager {
 	return storage.NewBucketManager(q.Credentials(), &q.StorageConfig)
 }
-func (q Client) BucketName() string {
-	return q.PutPolicy.Scope
-}
+
 func (q Client) Ping () error {
-	err := q.BucketManager().DeleteAfterDays(q.BucketName(), "Nonexistentfile__0102012", 0)
+	err := q.BucketManager().DeleteAfterDays(q.Bucket, "Nonexistentfile__0102012", 0)
 	if err.Error() == "no such file or directory" {
 		return nil
 	}
