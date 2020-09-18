@@ -1,6 +1,7 @@
 package qn_test
 
 import (
+	"encoding/json"
 	qn "github.com/og/go-better-qiniu"
 	ge "github.com/og/x/error"
 	gtest "github.com/og/x/test"
@@ -16,6 +17,7 @@ func ExampleBasic() {
 	qiniuClient := qn.Client{
 		AK: TestAK,
 		SK: TestSK,
+		Domain: TestDomain,
 		Bucket: TestBucket,
 		StorageConfig: storage.Config{
 			Zone:          &storage.ZoneHuanan,
@@ -26,7 +28,7 @@ func ExampleBasic() {
 		QiniuFileKey: "name.txt",
 	}) ; if err != nil {panic(err)}
 	// 公开空间
-	qiniuClient.PublicURL("http://domain.com", resp.Key)
+	qiniuClient.PublicURL(resp.Key)
 
 	// 分片上传大文件
 	qiniuClient.ResumeUpload(qn.ResumeUpload{
@@ -42,11 +44,60 @@ func ExampleBasic() {
 		RputExtra:     storage.RputExtra{},
 	})
 }
+func TestClient_Pfop(t *testing.T) {
+	as := gtest.NewAS(t)
+	qiniuClient := qn.Client{
+		AK: TestAK,
+		SK: TestSK,
+		Domain: TestDomain,
+		Bucket: TestBucket,
+		StorageConfig: storage.Config{
+			Zone:          &storage.ZoneHuanan,
+		},
+	}
+	{
+		source  := []qn.ZipData{}
+		{
+			one, err := qiniuClient.BytesUpdate(qn.BytesUpdate{
+				QiniuFileKey: "zip-source-1.txt",
+				Data:         []byte("1"),
+			})
+			as.NoError(err)
+			source = append(source, qn.ZipData{
+				QiniuFileKey: one.Key,
+				ZipRename: "zip-1.txt",
+			})
+		}
+		{
+			two, err := qiniuClient.BytesUpdate(qn.BytesUpdate{
+				QiniuFileKey: "zip-source-2.txt",
+				Data:         []byte("2"),
+			})
+			as.NoError(err)
+			source = append(source, qn.ZipData{
+				QiniuFileKey: two.Key,
+				ZipRename: "zip-2.txt",
+			})
+		}
+		persistentID, err := qiniuClient.Pfop(TestDomain, qn.Pfop{
+			Source:          source,
+			QiniuZipFileKey: "zip/" + time.Now().Format("20060102150405") + "file.zip",
+		})
+		as.NoError(err)
+		log.Print("persistentID ", persistentID)
+		time.Sleep(time.Second*5) // time.Sleep 测试用，生成环境请实现查询机制或使用 qn.Prop 的 NotifyURL字段
+		status, err := qiniuClient.Prefop(persistentID)
+		as.NoError(err)
+		b, err := json.MarshalIndent(status,"", "  ")
+		log.Print("pfop status :", string(b))
+	}
+}
 func TestFile(t *testing.T) {
 	as := gtest.NewAS(t)
 	qiniuClient := qn.Client{
 		AK: TestAK,
 		SK: TestSK,
+		Domain: TestDomain,
 		Bucket: TestBucket,
 		StorageConfig: storage.Config{
 			Zone:          &storage.ZoneHuanan,
@@ -76,8 +127,7 @@ func TestFile(t *testing.T) {
 		})
 		as.NoError(err, "can not be error")
 		as.Equal(resp.Key, cloudFilename)
-		url := qiniuClient.PrivateURL(qn.PrivateURLData{
-			Domain:   TestDomain,
+		url := qiniuClient.PrivateURL(qn.PrivateURL{
 			Key:      resp.Key,
 			Duration: time.Second*10,
 			Attname:  "",
@@ -97,46 +147,12 @@ func TestFile(t *testing.T) {
 		})
 		as.NoError(err, "can not be error")
 		as.Equal(resp.Key, cloudFilename)
-		url := qiniuClient.PrivateURL(qn.PrivateURLData{
-			Domain:   TestDomain,
+		url := qiniuClient.PrivateURL(qn.PrivateURL{
 			Key:      resp.Key,
 			Duration: time.Second*10,
 			Attname:  time.Now().Format("20060102150405") + "othername.csv",
 		})
 		log.Print(url)
-	}
-	{
-		source  := []qn.ZipData{}
-		{
-			one, err := qiniuClient.BytesUpdate(qn.BytesUpdate{
-				QiniuFileKey: "zip-source-1.txt",
-				Data:         []byte("1"),
-			})
-			as.NoError(err)
-			source = append(source, qn.ZipData{
-				QiniuFileKey: one.Key,
-				ZipRename: "zip-1.txt",
-			})
-		}
-		{
-			two, err := qiniuClient.BytesUpdate(qn.BytesUpdate{
-				QiniuFileKey: "zip-source-2.txt",
-				Data:         []byte("2"),
-			})
-			as.NoError(err)
-			source = append(source, qn.ZipData{
-				QiniuFileKey: two.Key,
-				ZipRename: "zip-2.txt",
-			})
-		}
-		persistentID, err := qiniuClient.Pfop(qn.Pfop{
-			Source:          source,
-			QiniuZipFileKey: "zip/" + time.Now().Format("20060102150405") + "file.zip",
-		})
-		as.NoError(err)
-		status, err := qiniuClient.Prefop(persistentID)
-		as.NoError(err)
-		log.Printf("pfop status %+v", status)
 	}
 }
 func TestPing(t *testing.T) {
@@ -145,6 +161,7 @@ func TestPing(t *testing.T) {
 		qiniuClient := qn.Client{
 			AK: TestAK,
 			SK: TestSK,
+			Domain: TestDomain,
 			Bucket: TestBucket,
 			StorageConfig: storage.Config{
 				Zone:          &storage.ZoneHuanan,
@@ -157,6 +174,7 @@ func TestPing(t *testing.T) {
 		qiniuClient := qn.Client{
 			AK: "",
 			SK: TestSK,
+			Domain: TestDomain,
 			Bucket: TestBucket,
 			StorageConfig: storage.Config{
 				Zone:          &storage.ZoneHuanan,
@@ -168,6 +186,7 @@ func TestPing(t *testing.T) {
 		qiniuClient := qn.Client{
 			AK: TestAK,
 			SK: "",
+			Domain: TestDomain,
 			Bucket: TestBucket,
 			StorageConfig: storage.Config{
 				Zone:          &storage.ZoneHuanan,
@@ -179,6 +198,7 @@ func TestPing(t *testing.T) {
 		qiniuClient := qn.Client{
 			AK: TestAK,
 			SK: TestSK,
+			Domain: TestDomain,
 			Bucket: "",
 			StorageConfig: storage.Config{
 				Zone:          &storage.ZoneHuanan,

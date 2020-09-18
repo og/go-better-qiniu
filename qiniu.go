@@ -28,6 +28,7 @@ func Create(filename string, reader func()(end bool, data []byte)) {
 type Client struct {
 	AK string
 	SK string
+	Domain string
 	Bucket string
 	StorageConfig storage.Config
 }
@@ -107,17 +108,16 @@ type Reply struct {
 	PersistentID PersistentID `json:"persistentId"`
 	Key          string `json:"key"`
 }
-func (q Client) PublicURL(domain string, key string) string {
-	return storage.MakePublicURL(domain, key)
+func (q Client) PublicURL(key string) string {
+	return storage.MakePublicURL(q.Domain, key)
 }
-type PrivateURLData struct {
-	Domain string
+type PrivateURL struct {
 	Key string
 	Duration time.Duration
 	Attname string
 }
-func (q Client) PrivateURL(data PrivateURLData) string {
-	publicURL := q.PublicURL(data.Domain, data.Key)
+func (q Client) PrivateURL(data PrivateURL) string {
+	publicURL := q.PublicURL(data.Key)
 	urlToSign := publicURL
 	if strings.Contains(publicURL, "?") {
 		urlToSign = fmt.Sprintf("%s&e=%d", urlToSign, data.Duration)
@@ -136,6 +136,18 @@ func (q Client) BucketManager () *storage.BucketManager {
 }
 
 func (q Client) Ping () error {
+	if q.AK == "" {
+		return errors.New("AK can not be empty string")
+	}
+	if q.SK == "" {
+		return errors.New("SK can not be empty string")
+	}
+	if q.Domain == "" {
+		return errors.New("Domain can not be empty string")
+	}
+	if q.Bucket == "" {
+		return errors.New("Bucket can not be empty string")
+	}
 	err := q.BucketManager().DeleteAfterDays(q.Bucket, "Nonexistentfile__0102012", 0)
 	if err.Error() == "no such file or directory" {
 		return nil
