@@ -62,49 +62,49 @@ func (q Client) Credentials() *auth.Credentials {
 }
 type ResumeUpload struct {
 	LocalFilename string
-	QiniuFilename string
+	QiniuFileKey string
 	RputExtra storage.RputExtra
 	PutPolicy storage.PutPolicy
 }
-func (q Client) ResumeUpload(data ResumeUpload) (resp Response ,err error) {
+func (q Client) ResumeUpload(data ResumeUpload) (reply Reply ,err error) {
 	if data.PutPolicy.Scope == "" {
 		data.PutPolicy.Scope = q.Bucket
 	}
 	uploader := storage.NewResumeUploader(&q.StorageConfig)
-	err = uploader.PutFile(context.Background(), &resp, q.Token(data.PutPolicy), data.QiniuFilename, data.LocalFilename, &data.RputExtra)
+	err = uploader.PutFile(context.Background(), &reply, q.Token(data.PutPolicy), data.QiniuFileKey, data.LocalFilename, &data.RputExtra)
 	return
 }
 type BytesUpdate struct {
-	QiniuFilename string
+	QiniuFileKey string
 	Data []byte
 	RputExtra storage.RputExtra
 	PutPolicy storage.PutPolicy
 }
-func (q Client) BytesUpdate(data BytesUpdate)(resp Response ,err error)  {
+func (q Client) BytesUpdate(data BytesUpdate)(reply Reply ,err error)  {
 	if data.PutPolicy.Scope == "" {
 		data.PutPolicy.Scope = q.Bucket
 	}
 	uploader := storage.NewResumeUploader(&q.StorageConfig)
-	err = uploader.Put(context.Background(), &resp, q.Token(data.PutPolicy), data.QiniuFilename, bytes.NewReader(data.Data), int64(len(data.Data)), &data.RputExtra)
+	err = uploader.Put(context.Background(), &reply, q.Token(data.PutPolicy), data.QiniuFileKey, bytes.NewReader(data.Data), int64(len(data.Data)), &data.RputExtra)
 	return
 }
 type Upload struct {
 	LocalFilename string
-	QiniuFilename string
+	QiniuFileKey string
 	PutExtra storage.PutExtra
 	PutPolicy storage.PutPolicy
 }
-func (q Client) Upload(data Upload) (resp Response ,err error) {
+func (q Client) Upload(data Upload) (reply Reply ,err error) {
 	if data.PutPolicy.Scope == "" {
 		data.PutPolicy.Scope = q.Bucket
 	}
 	uploader := storage.NewFormUploader(&q.StorageConfig)
-	err = uploader.PutFile(context.Background(), &resp, q.Token(data.PutPolicy), data.QiniuFilename, data.LocalFilename, &data.PutExtra)
+	err = uploader.PutFile(context.Background(), &reply, q.Token(data.PutPolicy), data.QiniuFileKey, data.LocalFilename, &data.PutExtra)
 	return
 }
-type Response struct {
+type Reply struct {
 	Hash         string `json:"hash"`
-	PersistentID string `json:"persistentId"`
+	PersistentID PersistentID `json:"persistentId"`
 	Key          string `json:"key"`
 }
 func (q Client) PublicURL(domain string, key string) string {
@@ -142,3 +142,4 @@ func (q Client) Ping () error {
 	}
 	return err
 }
+
