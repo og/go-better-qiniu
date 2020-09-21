@@ -11,7 +11,7 @@ type ZipData struct {
 	QiniuFileKey string
 	ZipRename string
 }
-func (q Client) CreateMkzipIndex(domain string, zips []ZipData, indexFileanme string)(reply Reply ,err error)  {
+func (q Client) CreateMkzipIndex(zips []ZipData, indexFileanme string)(reply Reply ,err error)  {
 	var data []byte
 	for _, item := range zips {
 		url := q.PrivateURL(PrivateURL{
@@ -35,9 +35,9 @@ type Pfop struct {
 	QiniuZipFileKey string
 	NotifyURL string
 }
-func (q Client) Pfop(domain string, data Pfop) (persistentID PersistentID,err error) {
+func (q Client) Pfop(data Pfop) (persistentID PersistentID,err error) {
 	indexFileKey := "golang/og/go-better-qiniu/mkzip-index/" + uuid.New().String() + ".txt"
-	indexReply, err := q.CreateMkzipIndex(domain, data.Source, indexFileKey) ; if err != nil {return "", err}
+	indexReply, err := q.CreateMkzipIndex(data.Source, indexFileKey) ; if err != nil {return "", err}
 	om := storage.NewOperationManager(q.Credentials(), &q.StorageConfig)
 	key := indexReply.Key
 	fops := "mkzip/4/|saveas/" + base64.StdEncoding.EncodeToString([]byte(q.Bucket + ":" + data.QiniuZipFileKey))
