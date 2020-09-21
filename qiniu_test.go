@@ -79,7 +79,7 @@ func TestClient_Pfop(t *testing.T) {
 				ZipRename: "zip-2.txt",
 			})
 		}
-		persistentID, err := qiniuClient.Pfop(TestDomain, qn.Pfop{
+		persistentID, err := qiniuClient.Pfop(qn.Pfop{
 			Source:          source,
 			QiniuZipFileKey: "zip/" + time.Now().Format("20060102150405") + "file.zip",
 		})
