@@ -41,7 +41,7 @@ func (q Client) Pfop(data Pfop) (persistentID PersistentID,err error) {
 	indexReply, err := q.CreateMkzipIndex(data.Source, indexFileKey) ; if err != nil {return "", err}
 	om := storage.NewOperationManager(q.Credentials(), &q.StorageConfig)
 	key := indexReply.Key
-	fops := "mkzip/4/|saveas/" + base64.StdEncoding.EncodeToString([]byte(q.Bucket + ":" + data.QiniuZipFileKey))
+	fops := "mkzip/4/|saveas/" + base64.URLEncoding.EncodeToString([]byte(q.Bucket + ":" + data.QiniuZipFileKey))
 	pipeline := ""
 	notifyURL := data.NotifyURL
 	stringPersistentID, err := om.Pfop(q.Bucket, key, fops, pipeline, notifyURL, false) ; if err != nil {return "", err }
