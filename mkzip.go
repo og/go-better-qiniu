@@ -19,8 +19,8 @@ func (q Client) CreateMkzipIndex(zips []ZipData, indexFileanme string)(reply Rep
 			Duration: time.Minute * 120,
 			Attname: item.QiniuFileKey,
 		})
-		s := "/url/" + base64.StdEncoding.EncodeToString([]byte(url)) +
-			"/alias/" + base64.StdEncoding.EncodeToString([]byte(item.ZipRename)) +
+		s := "/url/" + base64.URLEncoding.EncodeToString([]byte(url)) +
+			"/alias/" + base64.URLEncoding.EncodeToString([]byte(item.ZipRename)) +
 			"\n"
 		data = append(data, []byte(s)...)
 	}
