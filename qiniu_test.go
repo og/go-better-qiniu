@@ -130,7 +130,7 @@ func TestFile(t *testing.T) {
 		url := qiniuClient.PrivateURL(qn.PrivateURL{
 			Key:      resp.Key,
 			Duration: time.Second*10,
-			Attname:  "",
+			Attname:  "中文.txt",
 		})
 		httpResp , err := http.Get(url) ; ge.Check(err)
 		data, err := ioutil.ReadAll(httpResp.Body) ;ge.Check(err)

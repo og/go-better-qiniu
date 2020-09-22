@@ -9,6 +9,7 @@ import (
 	"github.com/qiniu/api.v7/v7/auth"
 	"github.com/qiniu/api.v7/v7/auth/qbox"
 	"github.com/qiniu/api.v7/v7/storage"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -125,7 +126,9 @@ func (q Client) PrivateURL(data PrivateURL) string {
 		urlToSign = fmt.Sprintf("%s?e=%d", urlToSign, data.Duration)
 	}
 	if len(data.Attname) != 0 {
-		urlToSign += "&attname=" + data.Attname
+		v := url.Values{}
+		v.Add("attname", data.Attname)
+		urlToSign += "&" + v.Encode()
 	}
 	token := q.Credentials().Sign([]byte(urlToSign))
 	privateURL := fmt.Sprintf("%s&token=%s", urlToSign, token)
